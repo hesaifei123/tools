@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Todo + Pomodoro</title>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --card: #ffffff;
+    --text: #2c3e50;
+    --text-secondary: #7f8c8d;
+    --border: #e4e7eb;
+    --primary: #4a90d9;
+    --primary-hover: #357abd;
+    --success: #27ae60;
+    --danger: #e74c3c;
+    --danger-hover: #c0392b;
+    --shadow: 0 2px 12px rgba(0,0,0,0.06);
+    --radius: 12px;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 40px 20px;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    align-items: flex-start;
+  }
+
+  /* ===== Panels ===== */
+  .panel {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 32px;
+    flex: 1 1 340px;
+    min-width: 300px;
+  }
+
+  .panel h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 24px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .panel h2 .icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+  }
+
+  .timer-panel .icon { background: #ebf5fb; color: var(--primary); }
+  .todo-panel  .icon { background: #eafaf1; color: var(--success); }
+
+  /* ===== Timer ===== */
+  .timer-display {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+
+  .time {
+    font-size: 4.5rem;
+    font-weight: 300;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 2px;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .time.running { color: var(--primary); }
+  .time.break  { color: var(--success); }
+
+  .timer-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: 6px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .progress-bar {
+    width: 100%;
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--primary);
+    border-radius: 3px;
+  }
+
+  .progress-fill.break { background: var(--success); }
+
+  .timer-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+  }
+
+  .timer-buttons button {
+    padding: 10px 24px;
+    border-radius: 8px;
+    border: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    font-family: var(--font);
+  }
+
+  .timer-buttons button:active { transform: scale(0.97); }
+
+  .btn-start {
+    background: var(--primary);
+    color: #fff;
+  }
+  .btn-start:hover { background: var(--primary-hover); }
+
+  .btn-pause {
+    background: #f39c12;
+    color: #fff;
+  }
+  .btn-pause:hover { background: #e67e22; }
+
+  .btn-reset {
+    background: #ecf0f1;
+    color: var(--text);
+  }
+  .btn-reset:hover { background: #d5dbdb; }
+
+  .btn-skip {
+    background: var(--success);
+    color: #fff;
+  }
+  .btn-skip:hover { background: #219a52; }
+
+  .preset-buttons {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .preset-buttons button {
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1.5px solid var(--border);
+    background: #fff;
+    font-size: 0.8rem;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all 0.15s;
+    font-family: var(--font);
+  }
+
+  .preset-buttons button:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+  }
+
+  .preset-buttons button.active {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+  }
+
+  /* ===== Todo ===== */
+  .todo-input-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .todo-input-row input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.15s;
+    font-family: var(--font);
+    color: var(--text);
+  }
+
+  .todo-input-row input:focus {
+    border-color: var(--primary);
+  }
+
+  .todo-input-row button {
+    padding: 10px 18px;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+    font-family: var(--font);
+    white-space: nowrap;
+  }
+
+  .todo-input-row button:hover { background: var(--primary-hover); }
+
+  .filter-row {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+  }
+
+  .filter-row button {
+    flex: 1;
+    padding: 7px 0;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-family: var(--font);
+    transition: all 0.15s;
+  }
+
+  .filter-row button.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+    font-weight: 600;
+  }
+
+  .todo-list {
+    list-style: none;
+    max-height: 360px;
+    overflow-y: auto;
+  }
+
+  .todo-list::-webkit-scrollbar { width: 4px; }
+  .todo-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .todo-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    animation: fadeIn 0.2s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .todo-item:last-child { border-bottom: none; }
+
+  .todo-item input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--success);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .todo-item .todo-text {
+    flex: 1;
+    font-size: 0.95rem;
+    word-break: break-word;
+    color: var(--text);
+    transition: color 0.15s;
+  }
+
+  .todo-item.completed .todo-text {
+    text-decoration: line-through;
+    color: var(--text-secondary);
+  }
+
+  .todo-item .todo-time {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .todo-item .btn-del {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    flex-shrink: 0;
+    font-family: var(--font);
+  }
+
+  .todo-item .btn-del:hover {
+    background: #fdecea;
+    color: var(--danger);
+  }
+
+  .todo-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+  }
+
+  .todo-footer button {
+    background: none;
+    border: none;
+    color: var(--danger);
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-family: var(--font);
+  }
+
+  .todo-footer button:hover { text-decoration: underline; }
+
+  /* Toast notification */
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--text);
+    color: #fff;
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    font-family: var(--font);
+    z-index: 100;
+  }
+
+  .toast.show { opacity: 1; }
+
+  /* Responsive */
+  @media (max-width: 700px) {
+    .container { flex-direction: column; }
+    .panel { flex: 1 1 auto; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- ====== Pomodoro Timer ====== -->
+  <div class="panel timer-panel">
+    <h2><span class="icon">🍅</span> 番茄钟</h2>
+
+    <div class="preset-buttons" id="presets"></div>
+
+    <div class="timer-display">
+      <div class="time" id="timerDisplay">25:00</div>
+      <div class="timer-label" id="timerLabel">专注</div>
+    </div>
+
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <div class="timer-buttons">
+      <button class="btn-start" id="btnStart">开始</button>
+      <button class="btn-pause" id="btnPause" style="display:none;">暂停</button>
+      <button class="btn-reset" id="btnReset">重置</button>
+      <button class="btn-skip" id="btnSkip">跳过</button>
+    </div>
+  </div>
+
+  <!-- ====== Todo List ====== -->
+  <div class="panel todo-panel">
+    <h2><span class="icon">📋</span> 待办清单</h2>
+
+    <div class="todo-input-row">
+      <input type="text" id="todoInput" placeholder="添加新的待办事项..." maxlength="200">
+      <button id="btnAdd">添加</button>
+    </div>
+
+    <div class="filter-row">
+      <button class="active" data-filter="all">全部</button>
+      <button data-filter="active">未完成</button>
+      <button data-filter="completed">已完成</button>
+    </div>
+
+    <ul class="todo-list" id="todoList"></ul>
+
+    <div class="todo-footer">
+      <span id="todoCount">0 项待办</span>
+      <button id="btnClearCompleted">清除已完成</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<audio id="alarmSound" preload="auto">
+  <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACAf39/f4B/f3+Af4CAgIGAgYCBgIGBgIGCgIGCgIGCgIGCgYGCgIGCgYGCgYGCgYGCgYGCgIGCgIGCgIGCgIGBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCAgYCAgYGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCAgYCAgYGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCAgYCAgYGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCAgYCAgYGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCAgYCAgYGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCAgYCAgYGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCAgYCAgYGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCAgYCAgYGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCAgYCAgYGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCAgYCAgYGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGAgIGBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCBgoCA">
+</audio>
+
+<script>
+(function() {
+  'use strict';
+
+  // ─────────────── DOM refs ───────────────
+  const timerDisplay   = document.getElementById('timerDisplay');
+  const timerLabel     = document.getElementById('timerLabel');
+  const progressFill   = document.getElementById('progressFill');
+  const btnStart       = document.getElementById('btnStart');
+  const btnPause       = document.getElementById('btnPause');
+  const btnReset       = document.getElementById('btnReset');
+  const btnSkip        = document.getElementById('btnSkip');
+  const presetsEl      = document.getElementById('presets');
+  const todoInput      = document.getElementById('todoInput');
+  const btnAdd         = document.getElementById('btnAdd');
+  const todoList       = document.getElementById('todoList');
+  const todoCount      = document.getElementById('todoCount');
+  const btnClearDone   = document.getElementById('btnClearCompleted');
+  const filterBtns     = document.querySelectorAll('.filter-row button');
+  const toastEl        = document.getElementById('toast');
+  const alarmSound     = document.getElementById('alarmSound');
+
+  // ─────────────── State ───────────────
+  let todos       = [];
+  let currentFilter = 'all';
+  let timerSeconds   = 25 * 60;    // current remaining seconds
+  let timerTotal     = 25 * 60;    // preset total for progress
+  let timerRunning   = false;
+  let timerInterval  = null;
+  let isBreak        = false;
+
+  // ─────────────── localStorage ───────────────
+  const STORAGE_KEY = 'todo-pomodoro-data';
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const data = JSON.parse(raw);
+        todos = data.todos || [];
+        // We don't restore a running timer — it would have expired by next visit
+      }
+    } catch (e) {
+      todos = [];
+    }
+  }
+
+  function saveState() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ todos }));
+    } catch (e) { /* quota exceeded, silently ignore */ }
+  }
+
+  // ─────────────── Toast ───────────────
+  let toastTimer = null;
+  function showToast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2000);
+  }
+
+  // ─────────────── Sound ───────────────
+  function playAlarm() {
+    alarmSound.currentTime = 0;
+    alarmSound.play().catch(() => {});
+  }
+
+  // ─────────────── Timer ───────────────
+  function formatTime(s) {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return String(m).padStart(2, '0') + ':' + String(sec).padStart(2, '0');
+  }
+
+  function updateTimerUI() {
+    timerDisplay.textContent = formatTime(timerSeconds);
+    const pct = ((timerTotal - timerSeconds) / timerTotal) * 100;
+    progressFill.style.width = pct + '%';
+
+    timerDisplay.classList.toggle('running', timerRunning);
+    timerDisplay.classList.toggle('break', isBreak && !timerRunning);
+    progressFill.classList.toggle('break', isBreak);
+    timerLabel.textContent = isBreak ? '休息' : '专注';
+  }
+
+  function setPreset(seconds, label) {
+    stopTimer();
+    timerSeconds = seconds;
+    timerTotal = seconds;
+    isBreak = (label === '休息');
+    if (label === '专注') isBreak = false;
+    // highlight active preset
+    document.querySelectorAll('#presets button').forEach(b => {
+      b.classList.toggle('active', parseInt(b.dataset.seconds) === seconds);
+    });
+    timerLabel.textContent = isBreak ? '休息' : '专注';
+    updateTimerUI();
+  }
+
+  function startTimer() {
+    if (timerRunning) return;
+    if (timerSeconds <= 0) {
+      // restart from preset
+      timerSeconds = timerTotal;
+    }
+    timerRunning = true;
+    btnStart.style.display = 'none';
+    btnPause.style.display = '';
+    updateTimerUI();
+
+    timerInterval = setInterval(() => {
+      timerSeconds--;
+      updateTimerUI();
+
+      if (timerSeconds <= 0) {
+        stopTimer();
+        playAlarm();
+        showToast(isBreak ? '休息结束！开始新的番茄吧 🍅' : '番茄完成！休息一下 ☕');
+
+        // toggle break / focus
+        const presetBtns = document.querySelectorAll('#presets button');
+        if (isBreak) {
+          // switch back to focus
+          const focusBtn = Array.from(presetBtns).find(b => b.dataset.seconds === '1500');
+          setPreset(1500, '专注');
+        } else {
+          const breakBtn = Array.from(presetBtns).find(b => b.dataset.seconds === '300');
+          setPreset(300, '休息');
+        }
+      }
+    }, 1000);
+  }
+
+  function stopTimer() {
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+    timerRunning = false;
+    btnStart.style.display = '';
+    btnPause.style.display = 'none';
+    updateTimerUI();
+  }
+
+  function resetTimer() {
+    stopTimer();
+    timerSeconds = timerTotal;
+    updateTimerUI();
+  }
+
+  function skipTimer() {
+    stopTimer();
+    timerSeconds = 0;
+    updateTimerUI();
+    playAlarm();
+    showToast(isBreak ? '已跳过休息' : '已跳过当前番茄');
+    // toggle
+    const presetBtns = document.querySelectorAll('#presets button');
+    if (isBreak) {
+      const focusBtn = Array.from(presetBtns).find(b => b.dataset.seconds === '1500');
+      setPreset(1500, '专注');
+    } else {
+      const breakBtn = Array.from(presetBtns).find(b => b.dataset.seconds === '300');
+      setPreset(300, '休息');
+    }
+  }
+
+  // ─────────────── Presets ───────────────
+  const presets = [
+    { label: '25 分钟', seconds: 1500, type: '专注' },
+    { label: '15 分钟', seconds: 900,  type: '专注' },
+    { label: '45 分钟', seconds: 2700, type: '专注' },
+    { label: '5 分钟',  seconds: 300,  type: '休息' },
+    { label: '10 分钟', seconds: 600,  type: '休息' },
+  ];
+
+  function renderPresets() {
+    presets.forEach((p, i) => {
+      const btn = document.createElement('button');
+      btn.textContent = p.label;
+      btn.dataset.seconds = p.seconds;
+      btn.dataset.type = p.type;
+      if (i === 0) btn.classList.add('active');
+      btn.addEventListener('click', () => setPreset(p.seconds, p.type));
+      presetsEl.appendChild(btn);
+    });
+  }
+
+  // ─────────────── Todo CRUD ───────────────
+  function addTodo() {
+    const text = todoInput.value.trim();
+    if (!text) return;
+    todos.push({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      text,
+      completed: false,
+      createdAt: new Date().toLocaleString('zh-CN', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' })
+    });
+    todoInput.value = '';
+    saveState();
+    renderTodos();
+    todoInput.focus();
+  }
+
+  function toggleTodo(id) {
+    const t = todos.find(t => t.id === id);
+    if (t) {
+      t.completed = !t.completed;
+      saveState();
+      renderTodos();
+    }
+  }
+
+  function deleteTodo(id) {
+    todos = todos.filter(t => t.id !== id);
+    saveState();
+    renderTodos();
+  }
+
+  function clearCompleted() {
+    const before = todos.length;
+    todos = todos.filter(t => !t.completed);
+    if (todos.length < before) {
+      saveState();
+      renderTodos();
+      showToast('已清除完成项');
+    }
+  }
+
+  function filteredTodos() {
+    if (currentFilter === 'active')     return todos.filter(t => !t.completed);
+    if (currentFilter === 'completed')  return todos.filter(t => t.completed);
+    return todos;
+  }
+
+  function renderTodos() {
+    const list = filteredTodos();
+    todoList.innerHTML = '';
+
+    if (list.length === 0) {
+      const li = document.createElement('li');
+      li.className = 'todo-item';
+      li.style.justifyContent = 'center';
+      li.style.color = 'var(--text-secondary)';
+      li.style.fontSize = '0.9rem';
+      li.textContent = currentFilter === 'completed' ? '还没有完成的事项' :
+                       currentFilter === 'active'    ? '全部搞定！' :
+                                                        '还没有待办，添加一个吧';
+      todoList.appendChild(li);
+    } else {
+      list.forEach(t => {
+        const li = document.createElement('li');
+        li.className = 'todo-item' + (t.completed ? ' completed' : '');
+
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = t.completed;
+        cb.addEventListener('change', () => toggleTodo(t.id));
+
+        const span = document.createElement('span');
+        span.className = 'todo-text';
+        span.textContent = t.text;
+
+        const time = document.createElement('span');
+        time.className = 'todo-time';
+        time.textContent = t.createdAt;
+
+        const del = document.createElement('button');
+        del.className = 'btn-del';
+        del.textContent = '×';
+        del.title = '删除';
+        del.addEventListener('click', () => deleteTodo(t.id));
+
+        li.append(cb, span, time, del);
+        todoList.appendChild(li);
+      });
+    }
+
+    // footer count
+    const activeCount = todos.filter(t => !t.completed).length;
+    todoCount.textContent = activeCount + ' 项待办';
+  }
+
+  // ─────────────── Filters ───────────────
+  filterBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      filterBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilter = btn.dataset.filter;
+      renderTodos();
+    });
+  });
+
+  // ─────────────── Event bindings ───────────────
+  btnStart.addEventListener('click', startTimer);
+  btnPause.addEventListener('click', stopTimer);
+  btnReset.addEventListener('click', resetTimer);
+  btnSkip.addEventListener('click', skipTimer);
+  btnAdd.addEventListener('click', addTodo);
+  btnClearDone.addEventListener('click', clearCompleted);
+  todoInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') addTodo();
+  });
+
+  // ─────────────── Page title ticker (optional) ───────────────
+  const originalTitle = document.title;
+  const tickerInterval = setInterval(() => {
+    if (timerRunning) {
+      document.title = formatTime(timerSeconds) + ' | ' + originalTitle;
+    } else {
+      document.title = originalTitle;
+    }
+  }, 1000);
+
+  // ─────────────── Init ───────────────
+  loadState();
+  renderPresets();
+  updateTimerUI();
+  renderTodos();
+
+})();
+</script>
+
+</body>
+</html>
