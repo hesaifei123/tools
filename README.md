@@ -1,3 +1,3 @@
 # tools
-todo-pomodoro
+todo-pomodoro/n
 lpl_mid_ranking
