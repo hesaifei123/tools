@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LPL 近十年中单选手综合排名</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #07070d;
+    --surface: #0f0f18;
+    --surface2: #161625;
+    --border: #252538;
+    --gold: #c8a84e;
+    --gold-dim: #5a4828;
+    --red: #e84057;
+    --red-bright: #ff4d6a;
+    --text: #c8c8d4;
+    --text-dim: #7a7a94;
+    --text-bright: #ececf4;
+    --accent-blue: #3b82f6;
+    --accent-green: #22c55e;
+    --accent-purple: #8b5cf6;
+    --accent-teal: #06b6d4;
+    --accent-orange: #f97316;
+    --accent-pink: #ec4899;
+  }
+  body {
+    font-family: -apple-system, "Microsoft YaHei", "PingFang SC", "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  .container { max-width: 1440px; margin: 0 auto; padding: 0 28px; }
+
+  .hero {
+    text-align: center; padding: 56px 0 36px; position: relative; overflow: hidden;
+  }
+  .hero::before {
+    content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 600px; height: 300px;
+    background: radial-gradient(ellipse at center, rgba(232,64,87,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero h1 { font-size: 2.6rem; font-weight: 900; color: var(--text-bright); letter-spacing: 3px; position: relative; }
+  .hero h1 .accent { color: var(--red-bright); }
+  .hero .subtitle { color: var(--text-dim); margin-top: 10px; font-size: 0.95rem; letter-spacing: 1px; }
+  .hero .divider {
+    display: block; width: 100px; height: 3px;
+    background: linear-gradient(90deg, transparent, var(--red), var(--gold), transparent);
+    margin: 18px auto 0; border-radius: 2px;
+  }
+
+  .intro {
+    max-width: 780px; margin: 0 auto 30px; text-align: center;
+    color: var(--text-dim); font-size: 0.88rem; line-height: 1.7;
+  }
+
+  .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 24px; }
+  .filter-btn {
+    padding: 7px 18px; border-radius: 20px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text-dim); cursor: pointer;
+    font-size: 0.82rem; transition: all 0.2s; font-family: inherit; letter-spacing: 0.5px;
+  }
+  .filter-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
+  .filter-btn.active { background: var(--red); border-color: var(--red); color: #fff; font-weight: 600; }
+
+  .table-wrap {
+    overflow-x: auto; border-radius: 12px; border: 1px solid var(--border);
+    background: var(--surface); margin-bottom: 40px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; min-width: 1100px; }
+  thead { position: sticky; top: 0; z-index: 5; }
+  th {
+    background: var(--surface2); padding: 13px 8px; text-align: center;
+    font-weight: 700; color: var(--text-dim); border-bottom: 2px solid var(--border);
+    white-space: nowrap; cursor: pointer; user-select: none; font-size: 0.78rem;
+    letter-spacing: 0.5px; transition: color 0.15s;
+  }
+  th:hover { color: var(--gold); }
+  th.sorted { color: var(--gold); background: rgba(200,168,78,0.06); }
+  td {
+    padding: 10px 8px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.03);
+    white-space: nowrap; transition: background 0.15s;
+  }
+  tbody tr:hover td { background: rgba(255,255,255,0.02); }
+  tbody tr { transition: opacity 0.2s; }
+  .rank-col { width: 44px; font-weight: 800; font-size: 1rem; }
+  .name-col { text-align: left; min-width: 140px; }
+  .total-col { font-weight: 900; font-size: 1.05rem; min-width: 56px; }
+
+  .rank-1 { color: var(--gold); }
+  .rank-2 { color: #c0c0c0; }
+  .rank-3 { color: #cd7f32; }
+
+  .score-cell { position: relative; min-width: 52px; }
+  .score-bar {
+    position: absolute; bottom: 1px; left: 3px; right: 3px; height: 3px;
+    border-radius: 2px; background: rgba(255,255,255,0.04);
+  }
+  .score-bar-fill { height: 100%; border-radius: 2px; transition: width 0.5s ease; }
+
+  .player-name { font-weight: 700; }
+  .player-cn { color: var(--text-dim); font-size: 0.76rem; margin-left: 5px; }
+  .player-team { font-size: 0.7rem; color: var(--text-dim); margin-top: 1px; }
+  .player-note { font-size: 0.7rem; color: var(--gold-dim); margin-top: 1px; font-style: italic; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
+
+  .badge { display: inline-block; padding: 1px 7px; border-radius: 3px; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.5px; margin-left: 2px; }
+  .badge-worlds { background: rgba(200,168,78,0.15); color: var(--gold); }
+  .badge-msi { background: rgba(59,130,246,0.15); color: var(--accent-blue); }
+  .badge-lpl { background: rgba(232,64,87,0.12); color: var(--red); }
+  .nat-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; }
+  .nat-kr { background: rgba(139,92,246,0.15); color: var(--accent-purple); }
+  .nat-cn { background: rgba(34,197,94,0.12); color: var(--accent-green); }
+
+  .section { margin-bottom: 48px; }
+  .section-title {
+    font-size: 1.35rem; font-weight: 800; color: var(--text-bright);
+    margin-bottom: 20px; padding-bottom: 10px;
+    border-bottom: 1px solid var(--border); letter-spacing: 1px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-title .icon { font-size: 1.3rem; }
+
+  .radar-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 20px;
+  }
+  .radar-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 24px 20px 16px; text-align: center;
+    transition: border-color 0.2s;
+  }
+  .radar-card:hover { border-color: var(--border); }
+  .radar-card h3 { font-size: 1rem; color: var(--text-bright); margin-bottom: 2px; }
+  .radar-card .rc-sub { font-size: 0.76rem; color: var(--text-dim); margin-bottom: 10px; }
+  .radar-card canvas { width: 100%; max-width: 280px; height: auto; }
+
+  .top-bar-section { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 40px; }
+  .top-bar-card {
+    flex: 1; min-width: 200px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 12px; padding: 20px;
+    text-align: center; position: relative; overflow: hidden;
+  }
+  .top-bar-card .rank-num {
+    position: absolute; top: 8px; right: 14px; font-size: 2.6rem; font-weight: 900;
+    color: rgba(255,255,255,0.03); line-height: 1;
+  }
+  .top-bar-card h4 { font-size: 1.1rem; color: var(--text-bright); }
+  .top-bar-card .big-score { font-size: 2.4rem; font-weight: 900; margin: 6px 0; }
+  .top-bar-card .detail { font-size: 0.76rem; color: var(--text-dim); line-height: 1.5; }
+
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 14px;
+  }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 18px 14px; text-align: center;
+  }
+  .stat-card .num { font-size: 1.8rem; font-weight: 900; color: var(--text-bright); line-height: 1.2; }
+  .stat-card .num.sm { font-size: 1.15rem; }
+  .stat-card .label { font-size: 0.76rem; color: var(--text-dim); margin-top: 3px; }
+
+  .era-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+  }
+  .era-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 20px; border-left: 3px solid var(--border);
+    transition: border-left-color 0.2s;
+  }
+  .era-card:nth-child(1) { border-left-color: var(--accent-purple); }
+  .era-card:nth-child(2) { border-left-color: var(--accent-blue); }
+  .era-card:nth-child(3) { border-left-color: var(--gold); }
+  .era-card:nth-child(4) { border-left-color: var(--red); }
+  .era-card:nth-child(5) { border-left-color: var(--accent-teal); }
+  .era-card:nth-child(6) { border-left-color: var(--accent-green); }
+  .era-card:nth-child(7) { border-left-color: var(--accent-orange); }
+  .era-card h4 { font-size: 0.92rem; color: var(--text-bright); margin-bottom: 6px; }
+  .era-card p { font-size: 0.8rem; color: var(--text-dim); line-height: 1.6; }
+
+  .dim-legend { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 28px; justify-content: center; }
+  .dim-legend span { font-size: 0.76rem; color: var(--text-dim); display: flex; align-items: center; gap: 6px; }
+  .dim-legend .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+  .footer {
+    text-align: center; padding: 28px 0; color: var(--text-dim);
+    font-size: 0.74rem; border-top: 1px solid var(--border); margin-top: 30px;
+    line-height: 1.7;
+  }
+
+  @media (max-width: 768px) {
+    .container { padding: 0 14px; }
+    .hero h1 { font-size: 1.6rem; }
+    .hero { padding: 36px 0 24px; }
+    .radar-grid { grid-template-columns: 1fr; }
+    .era-grid { grid-template-columns: 1fr; }
+    .top-bar-section { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<div class="hero">
+  <h1>LPL <span class="accent">近十年</span> 中单综合排名</h1>
+  <p class="subtitle">2015 — 2025 · 十维评分 · 全面评估</p>
+  <span class="divider"></span>
+</div>
+
+<div class="intro">
+  综合巅峰实力、生涯持久度、冠军荣誉、国际赛事表现、联赛统治力、对线能力、英雄池深度、指挥领导力、稳定性与关键比赛表现十个维度，对LPL近十年来25+位中单选手进行系统性评分。评分基于客观荣誉数据与赛场表现观察，力求公正但仍含主观判断。
+</div>
+
+<div class="filter-bar">
+  <button class="filter-btn active" data-filter="all">全部选手</button>
+  <button class="filter-btn" data-filter="cn">国产中单</button>
+  <button class="filter-btn" data-filter="kr">韩援中单</button>
+  <button class="filter-btn" data-filter="worlds">世界冠军</button>
+  <button class="filter-btn" data-filter="active">现役选手</button>
+</div>
+
+<div class="dim-legend">
+  <span><span class="dot" style="background:#e84057"></span> 巅峰实力</span>
+  <span><span class="dot" style="background:#f59e0b"></span> 生涯持久</span>
+  <span><span class="dot" style="background:#c8a84e"></span> 冠军荣誉</span>
+  <span><span class="dot" style="background:#3b82f6"></span> 国际赛事</span>
+  <span><span class="dot" style="background:#ef4444"></span> 联赛统治</span>
+  <span><span class="dot" style="background:#8b5cf6"></span> 对线能力</span>
+  <span><span class="dot" style="background:#22c55e"></span> 英雄池</span>
+  <span><span class="dot" style="background:#ec4899"></span> 指挥领导</span>
+  <span><span class="dot" style="background:#06b6d4"></span> 稳定性</span>
+  <span><span class="dot" style="background:#f97316"></span> 关键比赛</span>
+</div>
+
+<div class="top-bar-section" id="topBar"></div>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+  <th class="rank-col" data-col="0">#</th>
+  <th class="name-col" data-col="1">选手</th>
+  <th data-col="2">国籍</th>
+  <th data-col="3">巅峰实力</th>
+  <th data-col="4">生涯持久</th>
+  <th data-col="5">冠军荣誉</th>
+  <th data-col="6">国际赛事</th>
+  <th data-col="7">联赛统治</th>
+  <th data-col="8">对线能力</th>
+  <th data-col="9">英雄池</th>
+  <th data-col="10">指挥领导</th>
+  <th data-col="11">稳定性</th>
+  <th data-col="12">关键比赛</th>
+  <th class="total-col" data-col="13">总分</th>
+</tr>
+</thead>
+<tbody id="tableBody"></tbody>
+</table>
+</div>
+
+<div class="section">
+<h2 class="section-title"><span class="icon">TOP 5</span> 选手雷达图</h2>
+<div class="radar-grid" id="radarGrid"></div>
+</div>
+
+<div class="section">
+<h2 class="section-title"><span class="icon">数据</span> 数据总览</h2>
+<div class="stats-grid" id="statsGrid"></div>
+</div>
+
+<div class="section">
+<h2 class="section-title"><span class="icon">时代</span> LPL 中单时代变迁</h2>
+<div class="era-grid" id="eraGrid"></div>
+</div>
+
+<div class="footer">
+  评分综合考量选手职业生涯表现 · 含主观判断 · 仅供参考娱乐<br>
+  LPL (League of Legends Pro League) 2013—2025
+</div>
+
+</div>
+
+<script>
+const dims = ["peak","longevity","titles","intl","domestic","laning","pool","leader","consistency","clutch"];
+const dimLabels = ["巅峰实力","生涯持久度","冠军荣誉","国际赛事","联赛统治力","对线能力","英雄池","指挥领导力","稳定性","关键比赛"];
+const dimColors = ["#e84057","#f59e0b","#c8a84e","#3b82f6","#ef4444","#8b5cf6","#22c55e","#ec4899","#06b6d4","#f97316"];
+
+const players = [
+  {
+    id:"rookie", name:"Rookie", nameCN:"宋义进", nat:"kr",
+    titles:["S8世界冠军","LPL春冠2019","OGN夏冠2014"],
+    note:"LPL历史第一中单有力竞争者，S8巅峰对线统治力无人能及",
+    team:"iG / V5 / TES / NIP", career:"2014-至今", active:true, worlds:true,
+    scores:{peak:9.5,longevity:9.5,titles:9.0,intl:9.0,domestic:9.0,laning:10.0,pool:9.0,leader:8.0,consistency:8.5,clutch:9.0}
+  },
+  {
+    id:"scout", name:"Scout", nameCN:"李汭燦", nat:"kr",
+    titles:["S11世界冠军","S11 FMVP","LPL夏冠x3"],
+    note:"EDG队魂级中单，S11决赛佐伊教学局永载史册",
+    team:"EDG / LNG / JDG", career:"2016-至今", active:true, worlds:true,
+    scores:{peak:9.0,longevity:9.0,titles:9.5,intl:9.5,domestic:9.0,laning:9.0,pool:9.0,leader:8.0,consistency:9.0,clutch:9.5}
+  },
+  {
+    id:"doinb", name:"Doinb", nameCN:"金泰相", nat:"kr",
+    titles:["S9世界冠军","LPL夏冠2019","常规赛MVPx3"],
+    note:"游走型中单体系开创者，自带体系，英雄海深不可测",
+    team:"QG / JDG / RW / FPX / LNG / NIP", career:"2015-至今", active:true, worlds:true,
+    scores:{peak:9.0,longevity:8.5,titles:9.5,intl:9.0,domestic:9.0,laning:7.5,pool:10.0,leader:10.0,consistency:8.0,clutch:9.5}
+  },
+  {
+    id:"knight", name:"Knight", nameCN:"卓定", nat:"cn",
+    titles:["MSI冠军2023","LPL冠军x5","常规赛MVPx3"],
+    note:"国产中单操作天花板，联赛统治力极强，仍在追逐S冠",
+    team:"SN / TES / JDG / BLG", career:"2018-至今", active:true, worlds:false,
+    scores:{peak:9.5,longevity:8.0,titles:9.0,intl:7.5,domestic:9.5,laning:9.5,pool:8.5,leader:6.5,consistency:8.5,clutch:6.5}
+  },
+  {
+    id:"xiaohu", name:"Xiaohu", nameCN:"李元浩", nat:"cn",
+    titles:["MSI冠军x3","LPL冠军x5"],
+    note:"LPL荣誉第一人，中上双修传奇，三届MSI冠军持有者",
+    team:"RNG / WBG", career:"2015-至今", active:true, worlds:false,
+    scores:{peak:8.5,longevity:9.5,titles:10.0,intl:8.0,domestic:9.5,laning:8.0,pool:8.5,leader:8.5,consistency:8.5,clutch:7.0}
+  },
+  {
+    id:"pawn", name:"PawN", nameCN:"许元硕", nat:"kr",
+    titles:["S4世界冠军","MSI冠军2015","LPL春冠2015"],
+    note:"S4冠军中单，EDG MSI首冠最大功臣，腰伤无奈退役",
+    team:"SSW / EDG", career:"2015-2017", active:false, worlds:true,
+    scores:{peak:9.0,longevity:5.5,titles:9.5,intl:9.5,domestic:8.0,laning:9.0,pool:8.5,leader:7.0,consistency:8.0,clutch:9.0}
+  },
+  {
+    id:"yagao", name:"Yagao", nameCN:"曾奇", nat:"cn",
+    titles:["LPL夏冠2022","LPL FMVP 2022夏","LPL春冠2023"],
+    note:"低调稳健的国产中坚力量，两进S赛四强，大心脏选手",
+    team:"JDG / BLG", career:"2018-至今", active:true, worlds:false,
+    scores:{peak:8.0,longevity:7.5,titles:8.0,intl:7.5,domestic:8.5,laning:7.5,pool:8.0,leader:7.5,consistency:8.0,clutch:8.0}
+  },
+  {
+    id:"godv", name:"GodV", nameCN:"韦朕", nat:"cn",
+    titles:["LPL夏冠2015"],
+    note:"天才型中单，皎月/维鲁斯反向Q等名场面，后转战PUBG",
+    team:"LGD", career:"2014-2017", active:false, worlds:false,
+    scores:{peak:9.0,longevity:4.5,titles:7.0,intl:5.5,domestic:8.0,laning:9.5,pool:10.0,leader:7.5,consistency:6.0,clutch:6.5}
+  },
+  {
+    id:"xiye", name:"xiye", nameCN:"苏汉伟", nat:"cn",
+    titles:["LPL春冠2017","全明星赛冠军2017","亚运会金牌2018"],
+    note:"WE 2.0核心，2018雅加达亚运会表演赛金牌中单",
+    team:"WE / DMO / LGD / JDG", career:"2015-2022", active:false, worlds:false,
+    scores:{peak:8.5,longevity:7.5,titles:8.0,intl:8.0,domestic:7.5,laning:8.5,pool:8.5,leader:7.5,consistency:7.5,clutch:8.0}
+  },
+  {
+    id:"icon", name:"icon", nameCN:"谢天宇", nat:"cn",
+    titles:[],
+    note:"多年老将，S11随LNG打入世界赛，职业生涯持久",
+    team:"OMG / LNG / BLG", career:"2016-2024", active:false, worlds:false,
+    scores:{peak:7.5,longevity:7.5,titles:5.5,intl:6.5,domestic:7.0,laning:7.5,pool:8.0,leader:6.0,consistency:6.5,clutch:6.0}
+  },
+  {
+    id:"angel", name:"Angel", nameCN:"向涛", nat:"cn",
+    titles:["S10世界亚军"],
+    note:"S10随SN闯入决赛，阿卡丽表现惊艳，稳健型中路",
+    team:"SN / WBG / RNG / NIP / OMG", career:"2019-至今", active:true, worlds:false,
+    scores:{peak:8.0,longevity:7.0,titles:7.0,intl:7.5,domestic:7.0,laning:7.5,pool:7.5,leader:6.5,consistency:7.5,clutch:8.0}
+  },
+  {
+    id:"cryin", name:"Cryin", nameCN:"袁成伟", nat:"cn",
+    titles:["MSI冠军2021"],
+    note:"RNG体系型中单，2021 MSI决赛发挥重要角色",
+    team:"ES / RNG / UP / iG", career:"2020-2024", active:false, worlds:false,
+    scores:{peak:7.5,longevity:5.5,titles:7.5,intl:7.0,domestic:7.0,laning:6.5,pool:6.5,leader:6.0,consistency:7.0,clutch:7.5}
+  },
+  {
+    id:"fofo", name:"FoFo", nameCN:"朱骏岚", nat:"tw",
+    titles:[],
+    note:"稳定输出的中单，在RA/BLG/EDG多队证明自己",
+    team:"RA / BLG / EDG / WE", career:"2020-至今", active:true, worlds:false,
+    scores:{peak:7.5,longevity:6.5,titles:5.5,intl:6.0,domestic:7.0,laning:8.0,pool:7.5,leader:6.0,consistency:7.5,clutch:6.0}
+  },
+  {
+    id:"creme", name:"Creme", nameCN:"林坚", nat:"cn",
+    titles:["LPL优胜者2025"],
+    note:"新生代操作怪，刺客英雄绝活，成长中的国产新星",
+    team:"OMG / TES", career:"2022-至今", active:true, worlds:false,
+    scores:{peak:8.0,longevity:4.5,titles:6.5,intl:6.0,domestic:7.5,laning:8.5,pool:7.0,leader:5.5,consistency:7.0,clutch:6.5}
+  },
+  {
+    id:"shanks", name:"Shanks", nameCN:"崔校军", nat:"cn",
+    titles:[],
+    note:"AL年轻核心中单，国产新生代领军人物之一",
+    team:"WE / AL", career:"2021-至今", active:true, worlds:false,
+    scores:{peak:7.5,longevity:5.0,titles:5.0,intl:5.5,domestic:7.0,laning:7.5,pool:7.0,leader:6.5,consistency:7.0,clutch:6.0}
+  },
+  {
+    id:"easyhoon", name:"Easyhoon", nameCN:"李知勋", nat:"kr",
+    titles:["S5世界冠军(SKT)"],
+    note:"沙皇人柱力，S5 SKT冠军中单轮换，VG稳健支柱",
+    team:"SKT(LCK) / VG", career:"2016-2018(LPL)", active:false, worlds:true,
+    scores:{peak:8.0,longevity:5.0,titles:8.0,intl:7.5,domestic:6.5,laning:7.5,pool:7.0,leader:7.0,consistency:8.0,clutch:7.0}
+  },
+  {
+    id:"cool", name:"Cool", nameCN:"无状态", nat:"cn",
+    titles:[],
+    note:"OMG黑暗势力时代中单，S3-S4国产中单牌面",
+    team:"OMG / LGD / FPX", career:"2013-2018", active:false, worlds:false,
+    scores:{peak:8.0,longevity:7.0,titles:5.5,intl:6.5,domestic:7.0,laning:8.5,pool:8.0,leader:6.5,consistency:7.0,clutch:6.5}
+  },
+  {
+    id:"zzitai", name:"Zz1tai", nameCN:"刘志豪", nat:"cn",
+    titles:["LPL春冠2018(上单)"],
+    note:"iG老将，后转上单随RNG夺冠，中上摇摆人",
+    team:"iG / RNG", career:"2013-2018", active:false, worlds:false,
+    scores:{peak:7.5,longevity:6.5,titles:7.0,intl:6.5,domestic:7.0,laning:8.0,pool:8.5,leader:7.0,consistency:6.5,clutch:6.5}
+  },
+  {
+    id:"kuro", name:"Kuro", nameCN:"李瑞行", nat:"kr",
+    titles:[],
+    note:"ROX Tigers核心中单，2018加盟BLG稳定输出",
+    team:"ROX(LCK) / BLG", career:"2018-2019(LPL)", active:false, worlds:false,
+    scores:{peak:7.5,longevity:5.0,titles:5.5,intl:6.5,domestic:6.5,laning:7.0,pool:7.5,leader:7.0,consistency:7.5,clutch:6.5}
+  },
+  {
+    id:"ucal", name:"Ucal", nameCN:"孙雨铉", nat:"kr",
+    titles:[],
+    note:"KT出道后辗转LPL，在TT稳定发挥的韩援中单",
+    team:"KT(LCK) / TT", career:"2022-至今(LPL)", active:true, worlds:false,
+    scores:{peak:7.0,longevity:5.5,titles:5.0,intl:6.0,domestic:6.5,laning:7.5,pool:7.5,leader:6.0,consistency:7.0,clutch:6.0}
+  },
+  {
+    id:"zeka", name:"Zeka", nameCN:"金建佑", nat:"kr",
+    titles:["S12世界冠军(DRX)"],
+    note:"DRX奇迹夺冠后效力BLG，后回归LCK HLE",
+    team:"BLG / HLE(LCK)", career:"2020(LPL短期)", active:true, worlds:true,
+    scores:{peak:8.5,longevity:3.5,titles:8.5,intl:8.0,domestic:6.0,laning:8.0,pool:7.0,leader:5.5,consistency:6.5,clutch:9.0}
+  },
+  {
+    id:"mole", name:"Mole", nameCN:"李昊炎", nat:"cn",
+    titles:[],
+    note:"多队流浪中单，东北Rookie，偶有亮眼操作",
+    team:"BLG / V5 / WE / UP / iG", career:"2019-2024", active:false, worlds:false,
+    scores:{peak:6.5,longevity:6.0,titles:5.0,intl:5.0,domestic:6.0,laning:7.0,pool:7.5,leader:5.5,consistency:6.0,clutch:5.5}
+  },
+  {
+    id:"forge", name:"Forge", nameCN:"邓杰", nat:"cn",
+    titles:[],
+    note:"蕉太狼，iG二队出道曾替补Rookie，有一定上限",
+    team:"iG / VG / RA / AL / UP", career:"2019-2024", active:false, worlds:false,
+    scores:{peak:6.5,longevity:5.5,titles:5.0,intl:5.0,domestic:6.0,laning:7.0,pool:6.5,leader:5.0,consistency:6.0,clutch:5.5}
+  },
+  {
+    id:"haichao", name:"Haichao", nameCN:"张海超", nat:"cn",
+    titles:[],
+    note:"LGD当前主力中单，年轻选手，尚在成长期",
+    team:"LGD", career:"2023-至今", active:true, worlds:false,
+    scores:{peak:6.5,longevity:4.0,titles:5.0,intl:5.0,domestic:6.0,laning:7.0,pool:6.5,leader:5.5,consistency:6.0,clutch:5.5}
+  },
+  {
+    id:"tangyuan", name:"Tangyuan", nameCN:"林宇鸿", nat:"cn",
+    titles:[],
+    note:"RNG新生代中单，操作有潜力，稳定性待提升",
+    team:"RNG", career:"2023-至今", active:true, worlds:false,
+    scores:{peak:6.0,longevity:3.5,titles:5.0,intl:5.0,domestic:5.5,laning:6.5,pool:6.5,leader:5.0,consistency:5.5,clutch:5.0}
+  },
+  {
+    id:"care", name:"Care", nameCN:"杨杰", nat:"cn",
+    titles:[],
+    note:"FPX重建期提拔的新人，有操作潜力但仍需打磨",
+    team:"FPX", career:"2023-至今", active:true, worlds:false,
+    scores:{peak:6.0,longevity:3.5,titles:5.0,intl:5.0,domestic:5.5,laning:6.5,pool:6.5,leader:5.0,consistency:6.0,clutch:5.5}
+  }
+];
+
+function getTotal(p) { return dims.reduce((s,d) => s + p.scores[d], 0); }
+
+function getRanked(filterFn) {
+  let list = filterFn ? players.filter(filterFn) : [...players];
+  list = list.map(p => ({...p, total: getTotal(p)}));
+  list.sort((a,b) => b.total - a.total);
+  return list;
+}
+
+let currentSort = { col: 13, asc: false };
+let currentFilter = 'all';
+
+function renderTable(filterFn) {
+  const list = getRanked(filterFn);
+  const tbody = document.getElementById('tableBody');
+  const rows = list.map((p, i) => {
+    const rk = i + 1;
+    const rc = rk <= 3 ? ' rank-' + rk : '';
+
+    let badges = '';
+    if (p.worlds) badges += '<span class="badge badge-worlds">S</span>';
+    if (p.titles.some(function(t) { return t.indexOf('MSI') !== -1; })) badges += '<span class="badge badge-msi">MSI</span>';
+    if (p.titles.some(function(t) { return t.indexOf('LPL') !== -1; })) badges += '<span class="badge badge-lpl">LPL</span>';
+
+    let natTag;
+    if (p.nat === 'kr') natTag = '<span class="nat-tag nat-kr">韩</span>';
+    else if (p.nat === 'tw') natTag = '<span class="nat-tag nat-kr">台</span>';
+    else natTag = '<span class="nat-tag nat-cn">中</span>';
+
+    const scoreCells = dims.map(function(d, di) {
+      const v = p.scores[d];
+      return '<td class="score-cell">' + v.toFixed(1) +
+        '<div class="score-bar"><div class="score-bar-fill" style="width:' + (v*10) + '%;background:' + dimColors[di] + '"></div></div>' +
+        '</td>';
+    }).join('');
+
+    const totalColor = p.total >= 85 ? 'var(--gold)' : p.total >= 75 ? 'var(--accent-blue)' : 'var(--text)';
+
+    return '<tr>' +
+      '<td class="rank-col' + rc + '">' + rk + '</td>' +
+      '<td class="name-col">' +
+        '<span class="player-name">' + p.name + '</span><span class="player-cn">' + p.nameCN + '</span>' +
+        '<span style="margin-left:4px">' + badges + '</span>' +
+        '<div class="player-team">' + p.team + '</div>' +
+        '<div class="player-note">' + p.note + '</div>' +
+      '</td>' +
+      '<td>' + natTag + '</td>' +
+      scoreCells +
+      '<td class="score-col total-col" style="color:' + totalColor + '">' + p.total.toFixed(1) + '</td>' +
+    '</tr>';
+  }).join('');
+  tbody.innerHTML = rows;
+  updateSortIndicator();
+}
+
+function sortTable(col) {
+  if (currentSort.col === col) { currentSort.asc = !currentSort.asc; }
+  else { currentSort.col = col; currentSort.asc = false; }
+
+  const tbody = document.getElementById('tableBody');
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+
+  rows.sort(function(a, b) {
+    let va, vb;
+    if (col === 0) {
+      va = parseFloat(a.querySelector('.total-col').textContent);
+      vb = parseFloat(b.querySelector('.total-col').textContent);
+    } else if (col === 1) {
+      va = a.querySelector('.player-name').textContent.toLowerCase();
+      vb = b.querySelector('.player-name').textContent.toLowerCase();
+      return currentSort.asc ? va.localeCompare(vb) : vb.localeCompare(va);
+    } else if (col === 2) {
+      va = a.querySelectorAll('td')[2].textContent.trim();
+      vb = b.querySelectorAll('td')[2].textContent.trim();
+      return currentSort.asc ? va.localeCompare(vb) : vb.localeCompare(va);
+    } else if (col >= 3 && col <= 13) {
+      const ci = col;
+      va = parseFloat(a.querySelectorAll('td')[ci].textContent);
+      vb = parseFloat(b.querySelectorAll('td')[ci].textContent);
+    } else {
+      return 0;
+    }
+    return currentSort.asc ? va - vb : vb - va;
+  });
+
+  rows.forEach(function(r, i) {
+    const rc = r.querySelector('.rank-col');
+    rc.textContent = i + 1;
+    rc.className = rc.className.replace(/rank-\d/g, '').trim() + ' rank-col';
+    if (i < 3) rc.classList.add('rank-' + (i+1));
+  });
+
+  rows.forEach(function(r) { tbody.appendChild(r); });
+  updateSortIndicator();
+}
+
+function updateSortIndicator() {
+  document.querySelectorAll('th').forEach(function(th) { th.classList.remove('sorted'); });
+  const headers = document.querySelectorAll('th');
+  const h = headers[currentSort.col];
+  if (!h) return;
+  h.classList.add('sorted');
+}
+
+document.querySelectorAll('.filter-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
+    this.classList.add('active');
+    const type = this.dataset.filter;
+    currentFilter = type;
+    let fn;
+    switch(type) {
+      case 'cn': fn = function(p) { return p.nat === 'cn'; }; break;
+      case 'kr': fn = function(p) { return p.nat === 'kr' || p.nat === 'tw'; }; break;
+      case 'worlds': fn = function(p) { return p.worlds; }; break;
+      case 'active': fn = function(p) { return p.active; }; break;
+      default: fn = null;
+    }
+    renderTable(fn);
+    renderTopBar(fn);
+  });
+});
+
+document.querySelector('thead').addEventListener('click', function(e) {
+  const th = e.target.closest('th');
+  if (!th) return;
+  const col = parseInt(th.dataset.col);
+  if (isNaN(col)) return;
+  sortTable(col);
+});
+
+function renderTopBar(filterFn) {
+  const top5 = getRanked(filterFn).slice(0, 5);
+  const colors = ['var(--gold)', '#c0c0c0', '#cd7f32', 'var(--text-dim)', 'var(--text-dim)'];
+  const container = document.getElementById('topBar');
+  container.innerHTML = top5.map(function(p, i) {
+    return '<div class="top-bar-card">' +
+      '<div class="rank-num">' + (i+1) + '</div>' +
+      '<h4>' + p.name + '</h4>' +
+      '<div class="big-score" style="color:' + colors[i] + '">' + p.total.toFixed(1) + '</div>' +
+      '<div class="detail">' +
+        (p.titles.slice(0,2).join('<br>') || '—') + '<br>' +
+        '<span style="color:var(--text-dim)">' + p.nameCN + ' · ' + p.team.split('/')[0] + '</span>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function drawRadar(canvas, player, color) {
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  const cx = w/2, cy = h/2;
+  const radius = Math.min(cx, cy) - 36;
+  const n = dims.length;
+
+  ctx.clearRect(0, 0, w, h);
+
+  for (let lvl = 1; lvl <= 5; lvl++) {
+    const r = (radius / 5) * lvl;
+    ctx.beginPath();
+    for (let i = 0; i < n; i++) {
+      const a = (Math.PI*2/n)*i - Math.PI/2;
+      const x = cx + r*Math.cos(a), y = cy + r*Math.sin(a);
+      if (i === 0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  for (let i = 0; i < n; i++) {
+    const a = (Math.PI*2/n)*i - Math.PI/2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + radius*Math.cos(a), cy + radius*Math.sin(a));
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.stroke();
+
+    const lx = cx + (radius+18)*Math.cos(a);
+    const ly = cy + (radius+18)*Math.sin(a);
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.font = '10px "Microsoft YaHei", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(dimLabels[i], lx, ly);
+  }
+
+  ctx.beginPath();
+  for (let i = 0; i < n; i++) {
+    const a = (Math.PI*2/n)*i - Math.PI/2;
+    const v = player.scores[dims[i]] / 10;
+    const x = cx + radius*v*Math.cos(a), y = cy + radius*v*Math.sin(a);
+    if (i === 0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  ctx.closePath();
+  ctx.fillStyle = color + '20';
+  ctx.fill();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  for (let i = 0; i < n; i++) {
+    const a = (Math.PI*2/n)*i - Math.PI/2;
+    const v = player.scores[dims[i]] / 10;
+    const x = cx + radius*v*Math.cos(a), y = cy + radius*v*Math.sin(a);
+    ctx.beginPath();
+    ctx.arc(x, y, 3.5, 0, Math.PI*2);
+    ctx.fillStyle = color;
+    ctx.fill();
+  }
+}
+
+function renderRadars() {
+  const top5 = getRanked().slice(0, 5);
+  const colors = ['#e84057','#c8a84e','#3b82f6','#22c55e','#8b5cf6'];
+  const grid = document.getElementById('radarGrid');
+  grid.innerHTML = top5.map(function(p, i) {
+    return '<div class="radar-card">' +
+      '<h3>' + p.name + ' <span style="font-size:0.76rem;color:var(--text-dim)">' + p.nameCN + '</span></h3>' +
+      '<div class="rc-sub">总分 ' + p.total.toFixed(1) + ' · ' + (p.titles[0] || '—') + '</div>' +
+      '<canvas id="radar-' + p.id + '" width="280" height="280"></canvas>' +
+    '</div>';
+  }).join('');
+
+  setTimeout(function() {
+    top5.forEach(function(p, i) {
+      const c = document.getElementById('radar-' + p.id);
+      if (c) drawRadar(c, p, colors[i]);
+    });
+  }, 60);
+}
+
+function renderStats() {
+  const all = getRanked();
+  const cn = all.filter(function(p) { return p.nat === 'cn'; }).length;
+  const kr = all.filter(function(p) { return p.nat === 'kr' || p.nat === 'tw'; }).length;
+  const ww = all.filter(function(p) { return p.worlds; }).length;
+  const avg = (all.reduce(function(s,p) { return s + p.total; }, 0) / all.length).toFixed(1);
+  const top = all[0];
+  const bestPeak = all.reduce(function(a,b) { return b.scores.peak > a.scores.peak ? b : a; });
+  const bestLane = all.reduce(function(a,b) { return b.scores.laning > a.scores.laning ? b : a; });
+  const bestPool = all.reduce(function(a,b) { return b.scores.pool > a.scores.pool ? b : a; });
+  const bestLead = all.reduce(function(a,b) { return b.scores.leader > a.scores.leader ? b : a; });
+
+  const stats = [
+    {num: all.length, label: '收录选手'},
+    {num: cn, label: '国产中单'},
+    {num: kr, label: '韩援/外援'},
+    {num: ww, label: '世界冠军得主'},
+    {num: avg, label: '平均总分'},
+    {num: top.name, label: '综合第一', sm:true},
+    {num: bestPeak.name, label: '巅峰最高', sm:true},
+    {num: bestLane.name, label: '对线最强', sm:true},
+    {num: bestPool.name, label: '英雄池最深', sm:true},
+    {num: bestLead.name, label: '指挥最强', sm:true}
+  ];
+
+  document.getElementById('statsGrid').innerHTML = stats.map(function(s) {
+    return '<div class="stat-card">' +
+      '<div class="num' + (s.sm ? ' sm' : '') + '">' + s.num + '</div>' +
+      '<div class="label">' + s.label + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function renderEras() {
+  const eras = [
+    {title:'2014-2015 · 韩援元年', body:'S4后三星双雄解体，PawN、Rookie、Doinb等韩援中单涌入LPL。PawN助EDG拿下MSI首冠，GodV以逆版本英雄池引领LGD崛起，Cool与OMG坚守国产最后的荣光。'},
+    {title:'2016-2017 · 御三家时代', body:'EDG、RNG、WE三强鼎立。Scout接替PawN成为EDG新核，Xiaohu随RNG稳步成长，xiye率领WE 2.0复兴。Easyhoon以沙皇在VG撑起全队。'},
+    {title:'2018 · iG登峰造极', body:'Rookie以绝对统治力带领iG夺得LPL首个S赛冠军，全年保持世界级对线压制力。Knight在SN初露锋芒，Doinb以独特游走体系在RW崭露头角。'},
+    {title:'2019 · FPX凤凰涅槃', body:'Doinb以革命性游走中单体系率FPX夺冠，重新定义中单玩法。Rookie与iG四强仍然强劲，Knight在TOP展现国产顶级中单潜质。'},
+    {title:'2020-2021 · 新生代崛起', body:'Knight率TES拿下MSC与LPL夏冠，Angel助SN闯入S10决赛。Cryin作为RNG体系核心夺回MSI。Scout以S11 FMVP级表现助EDG再登世界之巅。'},
+    {title:'2022-2023 · 百家争鸣', body:'Yagao带领JDG两夺联赛冠军并两进S赛四强，Xiaohu转上又归中拿下第三座MSI。Knight加盟JDG完成LPL大满贯与MSI冠军，Scout在LNG延续顶级表现。'},
+    {title:'2024-2025 · 新老交替', body:'Knight转战BLG继续统治联赛，Shanks在AL成长为国产新核，Creme随TES崛起。老一辈Rookie、Scout依然活跃，Doinb重回赛场，时代正在更迭。'}
+  ];
+  document.getElementById('eraGrid').innerHTML = eras.map(function(e) {
+    return '<div class="era-card"><h4>' + e.title + '</h4><p>' + e.body + '</p></div>';
+  }).join('');
+}
+
+renderTable();
+renderTopBar();
+renderRadars();
+renderStats();
+renderEras();
+</script>
+</body>
+</html>
